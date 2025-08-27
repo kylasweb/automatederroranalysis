@@ -1,0 +1,211 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+  // For production deployment, use PostgreSQL:
+  // provider = "postgresql"
+  // url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  analyses     Analysis[]
+  auditLogs    AuditLog[]
+  connectors   Connector[]
+  flows        Flow[]
+  aiAgents     AIAgent[]
+  settings     UserSetting[]
+  
+  @@map("users")
+}
+
+model AIAgent {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  type        String   // analyzer, classifier, predictor, summarizer, custom
+  provider    String   // groq, openai, huggingface, etc.
+  model       String
+  prompt      String
+  temperature Float    @default(0.3)
+  maxTokens   Int      @default(2000)
+  isActive    Boolean  @default(true)
+  lastUsed    DateTime?
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("ai_agents")
+}
+
+model Analysis {
+  id           String   @id @default(cuid())
+  userId       String
+  title        String?
+  logContent   String
+  techStack    String
+  environment  String
+  analysis     String
+  confidence   Float
+  source       String
+  status       AnalysisStatus @default(PENDING)
+  ocrExtracted String?
+  isIntermittent Boolean  @default(false)
+  needsFix     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alerts Alert[]
+  
+  @@map("analyses")
+}
+
+model Alert {
+  id          String      @id @default(cuid())
+  analysisId  String
+  type        AlertType
+  message     String
+  status      AlertStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  analysis Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  
+  @@map("alerts")
+}
+
+model Connector {
+  id          String           @id @default(cuid())
+  userId      String
+  name        String
+  type        ConnectorType
+  config      String           // JSON configuration
+  isActive    Boolean          @default(true)
+  lastUsed    String?          // ISO timestamp of last usage
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("connectors")
+}
+
+model Flow {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  config      String   // JSON flow configuration
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("flows")
+}
+
+model UserSetting {
+  id        String   @id @default(cuid())
+  userId    String
+  key       String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, key])
+  @@map("user_settings")
+}
+
+model AuditLog {
+  id          String       @id @default(cuid())
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String
+  oldValues   String?      // JSON
+  newValues   String?      // JSON
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime     @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("system_settings")
+}
+
+// Enums
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AnalysisStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AlertType {
+  ANALYSIS_COMPLETED
+  ANALYSIS_FAILED
+  OCR_COMPLETED
+  SECURITY_ALERT
+  SYSTEM_ALERT
+}
+
+enum AlertStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum ConnectorType {
+  TEAMS
+  JIRA
+  GITHUB
+  SLACK
+  EMAIL
+  WEBHOOK
+}

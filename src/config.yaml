@@ -1,0 +1,9 @@
+models:
+  - name: Autodetect
+    provider: groq
+    model: AUTODETECT
+    apiKey: ${ZAI_API_KEY}
+  - name: Llama3.1 405b Chat
+    provider: groq
+    model: llama3.1-405b
+    apiKey: ${ZAI_API_KEY}
