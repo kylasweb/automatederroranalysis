@@ -5,11 +5,11 @@
     }
   },
   "env": {
-    "EDGE_CONFIG": "@edge-config"
+    "EDGE_CONFIG": "placeholder_edge_config_connection_string"
   },
   "build": {
     "env": {
-      "EDGE_CONFIG": "@edge-config"
+      "EDGE_CONFIG": "placeholder_edge_config_connection_string"
     }
   }
 }
