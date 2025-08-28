@@ -6,17 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { 
-  Plug, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  TestTube, 
+import {
+  Plug,
+  Plus,
+  Edit,
+  Trash2,
+  TestTube,
   Settings,
   MessageSquare,
   ExternalLink,
@@ -126,16 +127,16 @@ export default function ConnectorsManagement() {
   const handleCreateConnector = async () => {
     try {
       const configObj = formData.config ? JSON.parse(formData.config) : {};
-      
+
       // First get the admin user
       const usersResponse = await fetch('/api/users');
       const users = await usersResponse.json();
       const adminUser = users.find((user: any) => user.role === 'SUPER_ADMIN' || user.role === 'ADMIN');
-      
+
       if (!adminUser) {
         throw new Error('No admin user found');
       }
-      
+
       const response = await fetch('/api/connectors', {
         method: 'POST',
         headers: {
@@ -159,7 +160,7 @@ export default function ConnectorsManagement() {
       setConnectors([...connectors, newConnector]);
       setFormData({ name: '', type: 'TEAMS', config: '', isActive: true });
       setIsCreateDialogOpen(false);
-      
+
       toast({
         title: "Connector created",
         description: `${newConnector.name} has been created successfully.`,
@@ -179,7 +180,7 @@ export default function ConnectorsManagement() {
 
     try {
       const configObj = formData.config ? JSON.parse(formData.config) : {};
-      
+
       const response = await fetch(`/api/connectors/${selectedConnector.id}`, {
         method: 'PUT',
         headers: {
@@ -206,7 +207,7 @@ export default function ConnectorsManagement() {
       setFormData({ name: '', type: 'TEAMS', config: '', isActive: true });
       setSelectedConnector(null);
       setIsEditDialogOpen(false);
-      
+
       toast({
         title: "Connector updated",
         description: `${updatedConnector.name} has been updated successfully.`,
@@ -235,7 +236,7 @@ export default function ConnectorsManagement() {
 
       const updatedConnectors = connectors.filter(connector => connector.id !== connectorId);
       setConnectors(updatedConnectors);
-      
+
       toast({
         title: "Connector deleted",
         description: "Connector has been deleted successfully.",
@@ -303,20 +304,20 @@ export default function ConnectorsManagement() {
 
   const testConnection = async () => {
     if (!selectedConnector) return;
-    
+
     setIsTestingConnection(true);
     try {
-      const config = typeof selectedConnector.config === 'object' 
-        ? selectedConnector.config 
+      const config = typeof selectedConnector.config === 'object'
+        ? selectedConnector.config
         : JSON.parse(selectedConnector.config);
-      
+
       if (selectedConnector.type === 'TEAMS') {
         await ConnectorService.testTeamsConnection(config as TeamsConfig);
       } else {
         // Mock test for other connector types
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
-      
+
       setIsTestDialogOpen(false);
       toast({
         title: "Connection test successful",
@@ -337,7 +338,7 @@ export default function ConnectorsManagement() {
   const getConnectorTypeBadge = (type: string) => {
     const connectorType = connectorTypes.find(ct => ct.value === type);
     if (!connectorType) return <Badge variant="outline">Unknown</Badge>;
-    
+
     const Icon = connectorType.icon;
     return (
       <Badge variant="outline" className="flex items-center gap-1">
@@ -419,54 +420,56 @@ export default function ConnectorsManagement() {
               Add Connector
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[70vh]">
             <DialogHeader>
               <DialogTitle>Add New Connector</DialogTitle>
               <DialogDescription>
                 Create a new external service integration
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="connector-name">Name</Label>
-                <Input
-                  id="connector-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="My Connector"
-                />
+            <ScrollArea>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="connector-name">Name</Label>
+                  <Input
+                    id="connector-name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="My Connector"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="connector-type">Type</Label>
+                  <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select connector type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {connectorTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {getConnectorConfigForm(formData.type)}
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="connector-active"
+                    checked={formData.isActive}
+                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                  />
+                  <Label htmlFor="connector-active">Active</Label>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="connector-type">Type</Label>
-                <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select connector type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {connectorTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {getConnectorConfigForm(formData.type)}
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="connector-active"
-                  checked={formData.isActive}
-                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                />
-                <Label htmlFor="connector-active">Active</Label>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateConnector}>Add Connector</Button>
-            </DialogFooter>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateConnector}>Add Connector</Button>
+              </DialogFooter>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
       </div>
@@ -584,59 +587,59 @@ export default function ConnectorsManagement() {
               ) : (
                 filteredConnectors.map((connector) => (
                   <TableRow key={connector.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{connector.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {connector.isActive ? 'Active' : 'Inactive'}
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{connector.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {connector.isActive ? 'Active' : 'Inactive'}
+                        </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getConnectorTypeBadge(connector.type)}</TableCell>
-                  <TableCell>{getStatusBadge(connector.status)}</TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {connector.user?.name || connector.user?.email || 'Unknown'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-muted-foreground">
-                      {connector.lastUsed ? new Date(connector.lastUsed).toLocaleDateString() : 'Never'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={connector.isActive}
-                        onCheckedChange={() => handleToggleConnector(connector.id)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openTestDialog(connector)}
-                      >
-                        <TestTube className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(connector)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteConnector(connector.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+                    </TableCell>
+                    <TableCell>{getConnectorTypeBadge(connector.type)}</TableCell>
+                    <TableCell>{getStatusBadge(connector.status)}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {connector.user?.name || connector.user?.email || 'Unknown'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-muted-foreground">
+                        {connector.lastUsed ? new Date(connector.lastUsed).toLocaleDateString() : 'Never'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={connector.isActive}
+                          onCheckedChange={() => handleToggleConnector(connector.id)}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openTestDialog(connector)}
+                        >
+                          <TestTube className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(connector)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteConnector(connector.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
