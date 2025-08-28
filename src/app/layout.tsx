@@ -14,12 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LogAllot Provision Error Log Analysis - AI-Powered Log Analysis",
-  description: "Advanced error log analysis platform powered by AI. Analyze, debug, and resolve errors across your infrastructure with LogAllot.",
+  title: "Automated Provision Error Log Analysis - AI-Powered Log Analysis",
+  description: "Advanced error log analysis platform powered by AI. Analyze, debug, and resolve errors across your infrastructure with Automated.",
   keywords: ["LogAllot", "error log analysis", "AI debugging", "log analysis", "error monitoring", "Next.js", "TypeScript"],
   authors: [{ name: "LogAllot Team" }],
   openGraph: {
-    title: "LogAllot Provision Error Log Analysis",
+    title: "Automated Provision Error Log Analysis",
     description: "AI-powered error log analysis and debugging platform",
     url: "https://logallot.com",
     siteName: "LogAllot",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "LogAllot Provision Error Log Analysis",
+    title: "Automated Provision Error Log Analysis",
     description: "AI-powered error log analysis and debugging platform",
   },
 };

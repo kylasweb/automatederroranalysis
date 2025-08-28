@@ -10,10 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Settings, 
-  Save, 
-  RefreshCw, 
+import {
+  Settings,
+  Save,
+  RefreshCw,
   Database,
   Brain,
   Shield,
@@ -42,7 +42,7 @@ interface SettingsByCategory {
 
 const defaultSettings = {
   general: [
-    { key: 'app_name', value: 'LogAllot Provision Error Log Analysis', description: 'Application name', type: 'string' as const },
+    { key: 'app_name', value: 'Automated Provision Error Log Analysis', description: 'Application name', type: 'string' as const },
     { key: 'max_file_size', value: 10485760, description: 'Maximum file upload size in bytes', type: 'number' as const },
   ],
   features: [
@@ -53,35 +53,35 @@ const defaultSettings = {
     { key: 'ai_timeout', value: 30000, description: 'AI analysis timeout in milliseconds', type: 'number' as const },
     { key: 'ai_max_tokens', value: 2000, description: 'Maximum tokens for AI responses', type: 'number' as const },
     { key: 'ai_temperature', value: 0.3, description: 'AI temperature (0.0 - 1.0)', type: 'number' as const },
-    
+
     // Z.ai Configuration
     { key: 'zai_api_key', value: '', description: 'Z.ai API Key', type: 'string' as const },
     { key: 'zai_base_url', value: 'https://api.z.ai', description: 'Z.ai Base URL', type: 'string' as const },
-    
+
     // OpenAI Configuration
     { key: 'openai_api_key', value: '', description: 'OpenAI API Key', type: 'string' as const },
     { key: 'openai_model', value: 'gpt-4o-mini', description: 'OpenAI Model', type: 'string' as const },
-    
+
     // Groq Configuration  
     { key: 'groq_api_key', value: '', description: 'Groq API Key (Free tier available)', type: 'string' as const },
     { key: 'groq_model', value: 'llama-3.1-70b-versatile', description: 'Groq Model', type: 'string' as const },
-    
+
     // Hugging Face Configuration
     { key: 'huggingface_api_key', value: '', description: 'Hugging Face API Key (Free tier available)', type: 'string' as const },
     { key: 'huggingface_model', value: 'microsoft/DialoGPT-medium', description: 'Hugging Face Model', type: 'string' as const },
-    
+
     // OpenRouter Configuration
     { key: 'openrouter_api_key', value: '', description: 'OpenRouter API Key', type: 'string' as const },
     { key: 'openrouter_model', value: 'meta-llama/llama-3.1-8b-instruct:free', description: 'OpenRouter Model', type: 'string' as const },
-    
+
     // Together AI Configuration (Free tier)
     { key: 'together_api_key', value: '', description: 'Together AI API Key (Free credits available)', type: 'string' as const },
     { key: 'together_model', value: 'meta-llama/Llama-3-8b-chat-hf', description: 'Together AI Model', type: 'string' as const },
-    
+
     // Mistral AI Configuration (Free tier)
     { key: 'mistral_api_key', value: '', description: 'Mistral AI API Key (Free tier available)', type: 'string' as const },
     { key: 'mistral_model', value: 'mistral-7b-instruct', description: 'Mistral AI Model', type: 'string' as const },
-    
+
     // Cohere Configuration (Free tier)
     { key: 'cohere_api_key', value: '', description: 'Cohere API Key (Free tier available)', type: 'string' as const },
     { key: 'cohere_model', value: 'command-light', description: 'Cohere Model', type: 'string' as const },
@@ -112,12 +112,12 @@ export default function SystemSettings() {
       if (!response.ok) {
         throw new Error('Failed to fetch settings');
       }
-      
+
       const data = await response.json();
-      
+
       // Transform API data to match our interface
       const transformedSettings: SettingsByCategory = {};
-      
+
       // Initialize with default settings
       Object.keys(defaultSettings).forEach(category => {
         transformedSettings[category] = defaultSettings[category as keyof typeof defaultSettings].map(defaultSetting => {
@@ -142,7 +142,7 @@ export default function SystemSettings() {
         description: "Unable to fetch settings from the server. Please try again later.",
         variant: "destructive",
       });
-      
+
       // Load default settings as fallback
       const fallbackSettings: SettingsByCategory = {};
       Object.keys(defaultSettings).forEach(category => {
@@ -212,7 +212,7 @@ export default function SystemSettings() {
     setIsSaving(true);
     try {
       // Save all settings
-      const savePromises = Object.values(settings).flat().map(setting => 
+      const savePromises = Object.values(settings).flat().map(setting =>
         fetch('/api/settings', {
           method: 'PUT',
           headers: {
@@ -223,7 +223,7 @@ export default function SystemSettings() {
       );
 
       await Promise.all(savePromises);
-      
+
       toast({
         title: "Settings saved",
         description: "All settings have been saved successfully.",
@@ -258,10 +258,10 @@ export default function SystemSettings() {
       );
 
       await Promise.all(resetPromises);
-      
+
       // Refetch settings to get the updated values
       await fetchSettings();
-      
+
       toast({
         title: "Settings reset",
         description: "All settings have been reset to default values.",
@@ -278,7 +278,7 @@ export default function SystemSettings() {
 
   const renderSettingInput = (setting: SystemSetting) => {
     const value = setting.value;
-    
+
     // Special handling for AI provider selection
     if (setting.key === 'ai_provider') {
       return (
@@ -299,12 +299,12 @@ export default function SystemSettings() {
         </Select>
       );
     }
-    
+
     // Special handling for model selection
     if (setting.key.includes('_model')) {
       const provider = setting.key.split('_')[0];
       let options: Array<{ value: string; label: string }> = [];
-      
+
       switch (provider) {
         case 'openai':
           options = [
@@ -357,7 +357,7 @@ export default function SystemSettings() {
           ];
           break;
       }
-      
+
       if (options.length > 0) {
         return (
           <Select value={value} onValueChange={(newValue) => updateSetting(setting.key, newValue)}>
@@ -375,7 +375,7 @@ export default function SystemSettings() {
         );
       }
     }
-    
+
     // Special handling for API keys (password input)
     if (setting.key.includes('api_key')) {
       return (
@@ -405,7 +405,7 @@ export default function SystemSettings() {
         </div>
       );
     }
-    
+
     switch (setting.type) {
       case 'boolean':
         return (

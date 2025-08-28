@@ -82,7 +82,7 @@ export default function Home() {
         });
         return;
       }
-      
+
       setSelectedFile(file);
       // Clear previous analysis results when new file is uploaded
       setAnalysisResult(null);
@@ -92,7 +92,7 @@ export default function Home() {
         setLogContent(content);
       };
       reader.readAsText(file);
-      
+
       toast({
         title: "File uploaded",
         description: `${file.name} has been loaded successfully.`,
@@ -121,15 +121,15 @@ export default function Home() {
     }
 
     setIsAnalyzing(true);
-    
+
     try {
       const response = await fetch('/api/analyze-log', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          logContent, 
+        body: JSON.stringify({
+          logContent,
           userId: null,
           apiKeys: useCustomKeys ? apiKeys : undefined
         }),
@@ -142,7 +142,7 @@ export default function Home() {
 
       const result = await response.json();
       setAnalysisResult(result);
-      
+
       toast({
         title: "Analysis complete",
         description: "Your log has been analyzed successfully.",
@@ -239,7 +239,7 @@ export default function Home() {
               {notificationType === 'intermittent' ? 'Notify Testers' : 'Report Bug to Team'}
             </DialogTitle>
             <DialogDescription>
-              {notificationType === 'intermittent' 
+              {notificationType === 'intermittent'
                 ? 'Send notification to testers about intermittent issue and cluster re-provisioning'
                 : 'Report bug to developers and testers for code fix'
               }
@@ -257,8 +257,8 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground mb-4">
                   No Teams connectors configured
                 </p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setIsOpen(false);
                     window.open('/admin/connectors', '_blank');
@@ -274,11 +274,10 @@ export default function Home() {
                   {connectors.map((connector) => (
                     <div
                       key={connector.id}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedConnector === connector.id
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedConnector === connector.id
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:border-primary/50'
-                      }`}
+                        }`}
                       onClick={() => setSelectedConnector(connector.id)}
                     >
                       <div className="font-medium">{connector.name}</div>
@@ -296,7 +295,7 @@ export default function Home() {
               Cancel
             </Button>
             {connectors.length > 0 && (
-              <Button 
+              <Button
                 onClick={handleSendNotification}
                 disabled={!selectedConnector || !analysisResult || isSending}
               >
@@ -405,8 +404,8 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground mb-4">
                   No Teams connectors configured
                 </p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setIsOpen(false);
                     window.open('/admin/connectors', '_blank');
@@ -422,11 +421,10 @@ export default function Home() {
                   {connectors.map((connector) => (
                     <div
                       key={connector.id}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedConnector === connector.id
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedConnector === connector.id
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:border-primary/50'
-                      }`}
+                        }`}
                       onClick={() => setSelectedConnector(connector.id)}
                     >
                       <div className="font-medium">{connector.name}</div>
@@ -444,7 +442,7 @@ export default function Home() {
               Cancel
             </Button>
             {connectors.length > 0 && (
-              <Button 
+              <Button
                 onClick={handleSendToTeams}
                 disabled={!selectedConnector || !analysisResult}
               >
@@ -461,7 +459,7 @@ export default function Home() {
     if (toolName === 'Teams') {
       return <TeamsConnectorDialog />;
     }
-    
+
     return (
       <Dialog>
         <DialogTrigger asChild>
@@ -492,7 +490,7 @@ export default function Home() {
         />
         <Label htmlFor="custom-keys">Use custom LLM API keys</Label>
       </div>
-      
+
       {useCustomKeys && (
         <Tabs defaultValue="openai" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
@@ -501,7 +499,7 @@ export default function Home() {
             <TabsTrigger value="anthropic">Anthropic</TabsTrigger>
             <TabsTrigger value="grok">Grok</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="openai" className="space-y-2">
             <Label htmlFor="openai-key">OpenAI API Key</Label>
             <Input
@@ -515,7 +513,7 @@ export default function Home() {
               Get your API key from OpenAI dashboard
             </p>
           </TabsContent>
-          
+
           <TabsContent value="google" className="space-y-2">
             <Label htmlFor="google-key">Google AI API Key</Label>
             <Input
@@ -529,7 +527,7 @@ export default function Home() {
               Get your API key from Google AI Studio
             </p>
           </TabsContent>
-          
+
           <TabsContent value="anthropic" className="space-y-2">
             <Label htmlFor="anthropic-key">Anthropic API Key</Label>
             <Input
@@ -543,7 +541,7 @@ export default function Home() {
               Get your API key from Anthropic Console
             </p>
           </TabsContent>
-          
+
           <TabsContent value="grok" className="space-y-2">
             <Label htmlFor="grok-key">Grok API Key</Label>
             <Input
@@ -559,7 +557,7 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       )}
-      
+
       <div className="text-xs text-muted-foreground">
         <p>Your API keys are stored locally in your browser and are never sent to our servers.</p>
       </div>
@@ -571,7 +569,7 @@ export default function Home() {
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight">LogAllot Provision Error Log Analysis</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Automated Provision Error Log Analysis</h1>
           <p className="text-xl text-muted-foreground">
             AI-powered DevOps error analysis and debugging platform
           </p>
@@ -661,7 +659,7 @@ export default function Home() {
                       </DialogContent>
                     </Dialog>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <Badge variant={useCustomKeys ? "default" : "secondary"}>
                       {useCustomKeys ? "Custom API Keys" : "Default AI Services"}
@@ -759,11 +757,11 @@ export default function Home() {
                       )}
                     </div>
                   )}
-                  
+
                   <Separator />
-                  
+
                   <div className="prose prose-sm max-w-none">
-                    <div 
+                    <div
                       dangerouslySetInnerHTML={{ __html: analysisResult.analysis.replace(/\n/g, '<br>') }}
                       className="whitespace-pre-wrap text-sm"
                     />
@@ -771,7 +769,7 @@ export default function Home() {
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-2 pt-4 border-t">
-                    <TeamsNotificationDialog 
+                    <TeamsNotificationDialog
                       analysisResult={analysisResult}
                       notificationType={analysisResult.isIntermittent ? 'intermittent' : 'bug'}
                     />

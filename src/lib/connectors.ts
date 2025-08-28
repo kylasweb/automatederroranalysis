@@ -48,12 +48,12 @@ export interface WebhookConfig {
   timeout?: number;
 }
 
-export type ConnectorConfig = 
-  | TeamsConfig 
-  | JiraConfig 
-  | GitHubConfig 
-  | SlackConfig 
-  | EmailConfig 
+export type ConnectorConfig =
+  | TeamsConfig
+  | JiraConfig
+  | GitHubConfig
+  | SlackConfig
+  | EmailConfig
   | WebhookConfig;
 
 export class ConnectorService {
@@ -68,7 +68,7 @@ export class ConnectorService {
       }
 
       const config = JSON.parse(connector.config) as TeamsConfig;
-      
+
       if (!config.webhookUrl) {
         throw new Error('Teams webhook URL is required');
       }
@@ -115,6 +115,9 @@ export class ConnectorService {
         themeColor: '28A745'
       };
 
+      console.log('Testing Teams connection with webhook URL:', config.webhookUrl);
+      console.log('Test message:', JSON.stringify(testMessage));
+
       const response = await fetch(config.webhookUrl, {
         method: 'POST',
         headers: {
@@ -123,13 +126,16 @@ export class ConnectorService {
         body: JSON.stringify(testMessage),
       });
 
+      console.log('Teams connection test response:', response);
+
       if (!response.ok) {
+        console.error('Teams connection test failed with status:', response.status);
         throw new Error(`Teams connection test failed: ${response.status}`);
       }
 
       return { success: true, message: 'Teams connection test successful' };
     } catch (error) {
-      console.error('Teams connection test failed:', error);
+      console.error('Teams connection test failed:', error, JSON.stringify(error));
       throw error;
     }
   }

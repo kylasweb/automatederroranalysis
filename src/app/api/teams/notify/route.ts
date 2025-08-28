@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 ${analysis.analysis.substring(0, 500)}${analysis.analysis.length > 500 ? '...' : ''}
 
 ---
-*Sent by LogAllot Provision Error Log Analysis System*
+*Sent by Automated Provision Error Log Analysis System*
       `;
     } else {
       title = '🐛 Bug Detected - Code Fix Required';
@@ -115,7 +115,7 @@ ${analysis.analysis.substring(0, 500)}${analysis.analysis.length > 500 ? '...' :
 ${analysis.analysis.substring(0, 500)}${analysis.analysis.length > 500 ? '...' : ''}
 
 ---
-*Sent by LogAllot Provision Error Log Analysis System*
+*Sent by Automated Provision Error Log Analysis System*
       `;
     }
 

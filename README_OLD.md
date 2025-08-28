@@ -1,4 +1,4 @@
-# 🚀 LogAllot Provision Error Log Analysis
+# 🚀 Automated Provision Error Log Analysis
 
 A modern, AI-powered error log analysis platform designed to help DevOps teams quickly identify, analyze, and resolve system issues across their infrastructure.
 

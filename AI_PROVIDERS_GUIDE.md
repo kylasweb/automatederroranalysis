@@ -2,7 +2,7 @@
 
 ## Overview
 
-LogAllot Provision Error Log Analysis now supports multiple AI providers, including several **completely free** options! Configure your preferred AI service for error log analysis.
+Automated Provision Error Log Analysis now supports multiple AI providers, including several **completely free** options! Configure your preferred AI service for error log analysis.
 
 ## 🆓 Free AI Providers
 

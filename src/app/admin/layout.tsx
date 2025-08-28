@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  GitBranch, 
-  Plug, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  GitBranch,
+  Plug,
+  Settings,
   Activity,
   Search,
   Bell,
@@ -66,11 +66,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    pathname === item.href
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${pathname === item.href
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                  }`}
+                    }`}
                   onClick={() => setSidebarOpen(false)}
                 >
                   <Icon className="h-4 w-4" />
@@ -86,7 +85,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:block lg:border-r">
         <div className="p-4 border-b">
           <h1 className="text-lg font-semibold">LogAllot Admin Panel</h1>
-          <p className="text-sm text-muted-foreground">LogAllot Provision Error Log Analysis</p>
+          <p className="text-sm text-muted-foreground">Automated Provision Error Log Analysis</p>
         </div>
         <nav className="p-4 space-y-2">
           {navigation.map((item) => {
@@ -95,11 +94,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  pathname === item.href
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${pathname === item.href
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                }`}
+                  }`}
               >
                 <Icon className="h-4 w-4" />
                 {item.name}
