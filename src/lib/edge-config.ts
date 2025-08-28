@@ -1,7 +1,12 @@
 import { createClient } from '@vercel/edge-config';
 
 // Initialize Edge Config client
-export const edgeConfig = createClient(process.env.EDGE_CONFIG);
+export const edgeConfig = process.env.EDGE_CONFIG
+    ? createClient(process.env.EDGE_CONFIG)
+    : {
+        get: async () => undefined,
+        getAll: async () => ({}),
+    };
 
 // Helper function to get configuration values
 export async function getEdgeConfig(key: string, fallback?: any) {

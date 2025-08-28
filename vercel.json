@@ -4,12 +4,8 @@
       "maxDuration": 30
     }
   },
-  "env": {
-    "EDGE_CONFIG": "placeholder_edge_config_connection_string"
-  },
+  "env": {},
   "build": {
-    "env": {
-      "EDGE_CONFIG": "placeholder_edge_config_connection_string"
-    }
+    "env": {}
   }
 }
