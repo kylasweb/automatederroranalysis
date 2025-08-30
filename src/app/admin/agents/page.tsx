@@ -33,7 +33,8 @@ interface AIAgent {
   type: string; // analyzer, classifier, predictor, summarizer, custom
   provider: string;
   model: string;
-  prompt: string;
+  prompt?: string;
+  systemPrompt?: string;
   temperature: number;
   maxTokens: number;
   isActive: boolean;
@@ -83,10 +84,10 @@ export default function AIAgentsPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'analyzer',
-    provider: 'groq',
-    model: 'llama-3.1-70b-versatile',
-    prompt: '',
+  type: 'analyzer',
+  provider: 'groq',
+  model: 'llama-3.1-70b-versatile',
+  systemPrompt: '',
     temperature: 0.3,
     maxTokens: 2000,
     isActive: true,
@@ -341,10 +342,11 @@ export default function AIAgentsPage() {
     setEditingAgent(agent);
     setFormData({
       name: agent.name,
-      description: agent.description,
+  description: agent.description || '',
+  type: agent.type || 'custom',
       provider: agent.provider,
       model: agent.model,
-      systemPrompt: agent.systemPrompt,
+  systemPrompt: agent.systemPrompt || '',
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
       isActive: agent.isActive,
@@ -356,7 +358,8 @@ export default function AIAgentsPage() {
     setFormData({
       name: '',
       description: '',
-      provider: 'groq',
+  type: 'analyzer',
+  provider: 'groq',
       model: 'llama-3.1-70b-versatile',
       systemPrompt: '',
       temperature: 0.3,

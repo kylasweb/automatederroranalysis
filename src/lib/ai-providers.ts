@@ -1,6 +1,8 @@
 // AI Provider Service - Supports multiple AI providers including free ones
 import { db } from './db';
 import { getEdgeConfig, getAIProviderConfig } from './edge-config';
+// Lazy import for alert manager to avoid circular dependencies
+import type { RealTimeAlertManager } from './alerts';
 
 export interface AIProviderConfig {
     provider: string;
@@ -30,6 +32,30 @@ export interface AIAnalysisResponse {
     };
 }
 
+// Generic retry helper with exponential backoff
+async function retryWithBackoff<T>(fn: () => Promise<T>, retries = 3, baseDelay = 300): Promise<T> {
+    let attempt = 0;
+    while (true) {
+        try {
+            return await fn();
+        } catch (err) {
+            attempt++;
+            if (attempt > retries) throw err;
+            const delay = baseDelay * Math.pow(2, attempt - 1);
+            await new Promise(res => setTimeout(res, delay));
+        }
+    }
+}
+
+// Redact long tokens and obvious API keys before including text in alerts/logs
+function redactSensitive(s: string, maxLen = 200) {
+    if (!s) return s;
+    // Replace long continuous alphanumeric tokens (likely API keys or tokens)
+    const redacted = s.replace(/(?:[A-Za-z0-9_-]{20,})/g, '[REDACTED]');
+    // Truncate to avoid sending very long content
+    return redacted.length > maxLen ? redacted.slice(0, maxLen) + '...[TRUNCATED]' : redacted;
+}
+
 class AIProviderService {
     private async getProviderConfig(provider?: string): Promise<AIProviderConfig> {
         try {
@@ -50,17 +76,17 @@ class AIProviderService {
             // If database is empty or missing, fallback to Edge Config
             if (Object.keys(config).length === 0) {
                 console.log('Database settings empty, using Edge Config...');
-                const edgeConfigData = await getAIProviderConfig();
+                const edgeConfigData: any = await getAIProviderConfig();
                 const activeProvider = provider || edgeConfigData.primaryProvider || 'groq';
 
                 return {
-                    provider: activeProvider,
-                    apiKey: edgeConfigData.providers[activeProvider]?.apiKey || '',
-                    model: edgeConfigData.providers[activeProvider]?.model || this.getDefaultModel(activeProvider),
-                    baseUrl: this.getDefaultBaseUrl(activeProvider),
-                    temperature: edgeConfigData.temperature || 0.3,
-                    maxTokens: edgeConfigData.maxTokens || 2000,
-                    timeout: edgeConfigData.timeout || 30000,
+                    provider: String(activeProvider),
+                    apiKey: (edgeConfigData.providers as any)[activeProvider]?.apiKey || '',
+                    model: (edgeConfigData.providers as any)[activeProvider]?.model || this.getDefaultModel(String(activeProvider)),
+                    baseUrl: this.getDefaultBaseUrl(String(activeProvider)),
+                    temperature: (edgeConfigData.temperature as any) || 0.3,
+                    maxTokens: (edgeConfigData.maxTokens as any) || 2000,
+                    timeout: (edgeConfigData.timeout as any) || 30000,
                 };
             }
 
@@ -125,26 +151,102 @@ class AIProviderService {
         if (!config.apiKey) {
             throw new Error(`API key not configured for provider: ${config.provider}`);
         }
+        try {
+            const callFn = async () => {
+                switch (config.provider) {
+                    case 'groq':
+                        return await this.callGroqAPI(request, config);
+                    case 'openai':
+                        return await this.callOpenAIAPI(request, config);
+                    case 'huggingface':
+                        return await this.callHuggingFaceAPI(request, config);
+                    case 'openrouter':
+                        return await this.callOpenRouterAPI(request, config);
+                    case 'together':
+                        return await this.callTogetherAPI(request, config);
+                    case 'mistral':
+                        return await this.callMistralAPI(request, config);
+                    case 'cohere':
+                        return await this.callCohereAPI(request, config);
+                    case 'z.ai':
+                        return await this.callZAIAPI(request, config);
+                    default:
+                        throw new Error(`Unsupported AI provider: ${config.provider}`);
+                }
+            };
 
-        switch (config.provider) {
-            case 'groq':
-                return this.callGroqAPI(request, config);
-            case 'openai':
-                return this.callOpenAIAPI(request, config);
-            case 'huggingface':
-                return this.callHuggingFaceAPI(request, config);
-            case 'openrouter':
-                return this.callOpenRouterAPI(request, config);
-            case 'together':
-                return this.callTogetherAPI(request, config);
-            case 'mistral':
-                return this.callMistralAPI(request, config);
-            case 'cohere':
-                return this.callCohereAPI(request, config);
-            case 'z.ai':
-                return this.callZAIAPI(request, config);
-            default:
-                throw new Error(`Unsupported AI provider: ${config.provider}`);
+            // Retry with exponential backoff on transient failures
+            return await retryWithBackoff(() => callFn(), 3, 300);
+        } catch (error: any) {
+            // Notify system admins of provider failure if alert manager exists
+            try {
+                const alertsModule = await import('./alerts');
+                const alertMgr = alertsModule.getAlertManager ? alertsModule.getAlertManager() : null;
+                if (alertMgr) {
+                    const truncatedPrompt = redactSensitive(request.prompt || '');
+                    const payload = {
+                        type: 'AI_PROVIDER_FAILURE',
+                        provider: config.provider,
+                        operation: 'analyzeWithAI',
+                        prompt: truncatedPrompt,
+                        error: error instanceof Error ? error.message : String(error),
+                        timestamp: new Date().toISOString(),
+                        retries: 3,
+                        requestId: (Math.random() + 1).toString(36).substring(2, 10),
+                    };
+                    alertMgr.sendSystemAlert(JSON.stringify(payload));
+                }
+            } catch (e) {
+                console.error('Failed to send provider failure system alert:', e);
+            }
+
+            throw error;
+        }
+    }
+
+    // Test a provider key without altering runtime config
+    async testApiKey(provider: string, apiKey: string): Promise<{ success: boolean; message: string }> {
+        try {
+            const cfg = await this.getProviderConfig(provider);
+            const tempCfg = { ...cfg, apiKey };
+
+            // perform a lightweight call depending on provider
+            switch (provider) {
+                case 'groq':
+                    await this.callGroqAPI({ prompt: 'Test connection. Please respond with "Connection successful".', maxTokens: 10 }, tempCfg);
+                    break;
+                case 'openai':
+                    await this.callOpenAIAPI({ prompt: 'Test connection. Please respond with "Connection successful".', maxTokens: 10 }, tempCfg);
+                    break;
+                default:
+                    // Generic test via analyzeWithAI
+                    await this.analyzeWithAI({ prompt: 'Test connection. Please respond with "Connection successful".', maxTokens: 10 }, provider);
+            }
+
+            return { success: true, message: 'Connection successful' };
+        } catch (error: any) {
+            // Send a system alert about provider failure if alert manager is available
+            try {
+                const alertsModule = await import('./alerts');
+                const alertMgr: RealTimeAlertManager | null = (alertsModule && alertsModule.getAlertManager) ? alertsModule.getAlertManager() : null;
+                if (alertMgr) {
+                    const payload = {
+                        type: 'AI_PROVIDER_TEST_FAILURE',
+                        provider,
+                        operation: 'testApiKey',
+                        // Don't include raw apiKey; redact any incidental text
+                        error: error instanceof Error ? error.message : String(error),
+                        timestamp: new Date().toISOString(),
+                        requestId: (Math.random() + 1).toString(36).substring(2, 10),
+                    };
+                    alertMgr.sendSystemAlert(JSON.stringify(payload));
+                }
+            } catch (e) {
+                // ignore alerting failures
+                console.error('Failed to send provider failure alert:', e);
+            }
+
+            return { success: false, message: error instanceof Error ? error.message : String(error) };
         }
     }
 

@@ -43,8 +43,11 @@ function InputOTPSlot({
 }: React.ComponentProps<"div"> & {
   index: number
 }) {
-  const inputOTPContext = React.useContext(OTPInputContext)
-  const { char, hasFakeCaret, isActive } = inputOTPContext?.slots[index] ?? {}
+  // input-otp's types don't expose 'slots' in a way our TS config accepts.
+  // Cast to any to access slots safely at runtime while keeping compile moving.
+  const ctx: any = React.useContext(OTPInputContext)
+  const { slots } = ctx
+  const { char, hasFakeCaret, isActive } = slots[index] ?? {}
 
   return (
     <div

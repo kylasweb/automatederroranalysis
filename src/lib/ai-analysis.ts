@@ -339,12 +339,15 @@ export async function analyzeLogWithAI(logContent: string, analysisId: string): 
     // Step 4: Analyze issue type
     const issueType = await analyzeIssueType(selectedResponse.response);
 
+    // Build a more comprehensive, structured analysis following the required template
+    const structuredAnalysis = buildStructuredAnalysis(logContent, selectedResponse.response, issueType, context);
+
     return {
       id: analysisId,
       timestamp: new Date().toISOString(),
       techStack: context.techStack,
       environment: context.environment,
-      analysis: selectedResponse.response,
+      analysis: structuredAnalysis,
       confidence: selectedResponse.confidence,
       source: selectedResponse.agent,
       isIntermittent: issueType.isIntermittent,
@@ -364,4 +367,121 @@ export async function analyzeLogWithAI(logContent: string, analysisId: string): 
       needsFix: true
     };
   }
+}
+
+// Helper: try to parse a Python traceback from the log content to extract file, line, function, exception
+export function parsePythonTraceback(logContent: string) {
+  // Simple heuristic parser that looks for 'Traceback (most recent call last):' and captures following lines
+  const tbStart = logContent.indexOf('Traceback (most recent call last):');
+  if (tbStart === -1) return null;
+
+  const tb = logContent.slice(tbStart);
+  const lines = tb.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+  // collect frames lines that look like: File "...", line N, in func
+  const frames: Array<{ file?: string; line?: number; func?: string; code?: string }> = [];
+  const frameRegex = /^File\s+\"([^\"]+)\",\s+line\s+(\d+),\s+in\s+(.*)$/;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(frameRegex);
+    if (m) {
+      const file = m[1];
+      const lineNum = parseInt(m[2], 10);
+      const func = m[3];
+      const code = lines[i + 1] || '';
+      frames.push({ file, line: lineNum, func, code });
+    }
+  }
+
+  // try to find exception line at the end (e.g., ValueError: message)
+  const exceptionLine = lines.slice(-1)[0] || '';
+  const exceptionMatch = exceptionLine.match(/^(\w+(?:\.\w+)*):\s*(.*)$/);
+
+  return {
+    raw: tb,
+    frames,
+    exception: exceptionMatch ? exceptionMatch[1] : undefined,
+    message: exceptionMatch ? exceptionMatch[2] : undefined
+  };
+}
+
+// Helper: build structured analysis Markdown following the required template
+export function buildStructuredAnalysis(originalLog: string, aiResponse: string, issueType: { isIntermittent: boolean; needsFix: boolean }, context: ContextualAnalysis) {
+  const tb = parsePythonTraceback(originalLog);
+
+  const errorType = tb?.exception || guessExceptionFromResponse(aiResponse) || 'UnknownError';
+  const rootCause = generateRootCauseExplanation(errorType, aiResponse);
+  const location = tb && tb.frames && tb.frames.length > 0 ? `${tb.frames[0].file}:${tb.frames[0].line}` : 'Unknown location';
+  const impact = generateImpactExplanation(errorType);
+
+  // Immediate fix: try-except code snippet based on the top frame code if available
+  const originalCodeLine = tb && tb.frames && tb.frames[0] ? tb.frames[0].code : undefined;
+  const tryExceptSnippet = generateTryExceptSnippet(errorType, originalCodeLine);
+
+  // Preventive measures
+  const preventive = `- Add input validation (e.g., using Pydantic or explicit type checks)\n- Improve logging to include contextual fields (request_id, user_id, payload)\n- Add alerts for repeated occurrences of ${errorType}`;
+
+  // Verification plan
+  const verification = `**Test Locally:** Create a small unit test or script that reproduces the failure and runs the patched code.\n**Deploy to Staging:** Deploy the fix to staging and run integration tests and load tests.\n**Monitor Production:** Monitor logs, set alerts, and verify metrics (error rate, latency) return to normal.`;
+
+  // Compose final Markdown following template
+  const md: string[] = [];
+  md.push('### 1. Analysis\n');
+  md.push(`**Error Type:** ${errorType}\n`);
+  md.push(`**Root Cause:** ${rootCause}\n`);
+  md.push(`**Location:** ${location}\n`);
+  md.push(`**Impact:** ${impact}\n`);
+
+  md.push('\n### 2. Proposed Solution\n');
+  md.push('**Immediate Fix:**\n');
+  md.push('```python\n');
+  md.push(tryExceptSnippet || `# Unable to extract original code; handle ${errorType} where appropriate\ntry:\n    # ...original code...\nexcept ${errorType} as e:\n    import logging\n    logging.exception("Handled ${errorType}: %s", e)\n    # return or raise appropriate error response\n`);
+  md.push('\n```\n');
+
+  md.push('**Preventive Measures:**\n');
+  md.push(preventive + '\n');
+
+  md.push('\n### 3. Verification\n');
+  md.push('**Test Locally:**\n');
+  md.push('- Reproduce the issue with a minimal script or unit test.\n');
+  md.push('**Deploy to Staging:**\n');
+  md.push('- Deploy to staging and run end-to-end tests.\n');
+  md.push('**Monitor Production:**\n');
+  md.push('- Watch logs and alerts for recurrence; verify error rates drop.\n');
+
+  return md.join('\n');
+}
+
+function guessExceptionFromResponse(resp: string) {
+  const known = ['ValueError', 'TypeError', 'KeyError', 'IndexError', 'AttributeError', 'RuntimeError'];
+  for (const k of known) {
+    if (resp.includes(k)) return k;
+  }
+  return undefined;
+}
+
+function generateRootCauseExplanation(errorType: string, resp: string) {
+  if (errorType === 'ValueError') return 'A value with an unexpected type or format was provided to a function or constructor.';
+  if (errorType === 'TypeError') return 'An operation was applied to an object of an inappropriate type.';
+  if (errorType === 'KeyError') return 'A required dictionary key was missing when attempting to access it directly.';
+  if (errorType === 'IndexError') return 'A sequence was accessed with an out-of-range index.';
+  if (errorType === 'AttributeError') return 'Code attempted to access an attribute or method that does not exist on the object.';
+  if (errorType === 'RuntimeError') return 'A runtime condition occurred that the code did not expect or handle.';
+  // fallback: attempt a short summary from AI response
+  return resp.split('\n').slice(0, 2).join(' ').slice(0, 400) || 'Unable to determine root cause from logs.';
+}
+
+function generateImpactExplanation(errorType: string) {
+  if (['ValueError', 'TypeError', 'KeyError', 'IndexError', 'AttributeError', 'RuntimeError'].includes(errorType)) {
+    return 'Likely causes a request failure or process crash if unhandled; may affect user requests or background jobs.';
+  }
+  return 'May lead to failed requests or degraded functionality; impact requires manual review.';
+}
+
+function generateTryExceptSnippet(errorType: string, originalCodeLine?: string) {
+  const safeError = errorType || 'Exception';
+  if (originalCodeLine) {
+    // indent original code line inside try block
+    return `try:\n    ${originalCodeLine}\nexcept ${safeError} as e:\n    import logging\n    logging.exception(\"Handled ${safeError}: %s\", e)\n    # return or raise an appropriate error response\n`;
+  }
+  return `try:\n    # original operation here\nexcept ${safeError} as e:\n    import logging\n    logging.exception(\"Handled ${safeError}: %s\", e)\n    # return or raise an appropriate error response\n`;
 }

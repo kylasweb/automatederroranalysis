@@ -6,20 +6,21 @@ import next from 'next';
 
 const dev = process.env.NODE_ENV !== 'production';
 const currentPort = 3000;
-const hostname = '0.0.0.0';
+// Allow override via HOST env var. Default to localhost in dev, 0.0.0.0 in production.
+const hostname = process.env.HOST || (dev ? '127.0.0.1' : '0.0.0.0');
 
 // Custom server with Socket.IO integration
 async function createCustomServer() {
   try {
     // Create Next.js app
-    const nextApp = next({ 
+    const nextApp = (next as any)({
       dev,
       dir: process.cwd(),
       // In production, use the current directory where .next is located
       conf: dev ? undefined : { distDir: './.next' }
     });
 
-    await nextApp.prepare();
+    if (typeof (nextApp as any).prepare === 'function') await (nextApp as any).prepare();
     const handle = nextApp.getRequestHandler();
 
     // Create HTTP server that will handle both Next.js and Socket.IO
@@ -50,7 +51,7 @@ async function createCustomServer() {
 
   } catch (err) {
     console.error('Server startup error:', err);
-    process.exit(1);
+    (process as any).exit(1);
   }
 }
 

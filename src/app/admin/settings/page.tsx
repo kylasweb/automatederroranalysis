@@ -391,12 +391,23 @@ export default function SystemSettings() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                // Test API key functionality
-                toast({
-                  title: "API Key Testing",
-                  description: "API key validation feature coming soon.",
-                });
+              onClick={async () => {
+                try {
+                  const provider = setting.key.split('_')[0];
+                  const resp = await fetch('/api/settings/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, apiKey: value })
+                  });
+                  const data = await resp.json();
+                  if (data.success) {
+                    toast({ title: 'API Key Valid', description: `${provider} connection successful.` });
+                  } else {
+                    toast({ title: 'API Key Invalid', description: data.message || 'Failed to validate API key', variant: 'destructive' });
+                  }
+                } catch (error) {
+                  toast({ title: 'Test Failed', description: error instanceof Error ? error.message : String(error), variant: 'destructive' });
+                }
               }}
             >
               Test

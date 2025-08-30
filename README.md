@@ -174,8 +174,30 @@ src/
 
 ## 🔒 Security
 
-- **Authentication**: Secure JWT-based authentication
-- **Authorization**: Role-based access control
+## RBAC and Key Rotation
+
+This project includes basic role-based access control for administrative endpoints. System settings (including stored API keys) are restricted to users with role `ADMIN` or `SUPER_ADMIN`.
+
+Authentication header accepted by the API:
+
+- Authorization: Bearer <sessionToken>
+- x-session-token: <sessionToken>
+
+Session tokens are issued by the demo login endpoint and are of the form base64("<userId>:<timestamp>"). In production, replace this with a proper JWT/NextAuth session.
+
+## Key Rotation
+
+To rotate the encryption key used to protect stored API keys, set `NEW_SECRET` and run the rotate script in dry-run mode first:
+
+1. Dry run (no writes):
+
+   - NEW_SECRET="<new-secret>" node ./scripts/rotate-keys.js --dry-run
+
+2. Apply (writes):
+   - NEW_SECRET="<new-secret>" node ./scripts/rotate-keys.js --apply
+
+Always backup the database before running key rotation. Ensure `NEW_SECRET` is set in your deployment environment and that you keep the old key available until rotation completes successfully.
+
 - **Data Protection**: Encrypted sensitive data storage
 - **Audit Trail**: Complete security event logging
 - **Environment Security**: Secure configuration management
@@ -220,3 +242,31 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Automated Provision Error Log Analysis** - Intelligent error analysis for modern applications.
+
+## 🔑 Adding Groq API Key (for analysis, fix generation, and reporting)
+
+You can configure Groq as the primary AI provider. Do NOT commit your secret into the repository.
+
+1. Preferred (Edge Config / hosting provider): Add the key under `ai.groq.apiKey` or `GROQ_API_KEY` as an environment variable.
+
+2. Local development: copy `.env.example` to `.env.local` and add:
+
+```bash
+GROQ_API_KEY=your_groq_api_key_here
+```
+
+3. Test the Groq provider locally with the helper script:
+
+```bash
+npx tsx scripts/test-groq.ts
+```
+
+If the key is valid you should see a success message like "Connection successful" with provider and model details.
+
+## ✅ Recommended next steps after adding the Groq key
+
+- Run the Groq connection test and verify successful responses.
+- Run a few representative error logs through the app and confirm that the analysis output follows the new structured template (Analysis / Proposed Solution / Verification).
+- Add automated unit tests for the traceback parser and structured formatter (`src/lib/ai-analysis.ts`).
+- Configure Edge Config (or your deployment platform) to store the Groq API key securely for production.
+- Monitor AI provider usage and set alerts for quota/latency issues.
